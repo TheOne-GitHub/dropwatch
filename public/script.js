@@ -125,7 +125,23 @@ $("#watch-form").addEventListener("submit",function(e){
 });
 
 /* ---- alerts signup sheet (saved on the site's backend: /api/signup; sent by /api/cron) ---- */
-var dlg=$("#ping"),pingCtx={},alertsOn=null;
+var dlg=$("#ping"),pingCtx={},alertsOn=null,NTFY="https://ntfy.sh";
+/* free push via ntfy: one private, unguessable topic per device, kept in localStorage */
+function makeTopic(){var a="abcdefghijkmnpqrstuvwxyz23456789",b=new Uint8Array(14),s="";try{crypto.getRandomValues(b)}catch(_){for(var i=0;i<b.length;i++)b[i]=Math.floor(Math.random()*256)}for(var j=0;j<b.length;j++)s+=a[b[j]%a.length];return "dropwatch-"+s}
+function lsGet(k){try{return localStorage.getItem(k)}catch(_){return null}}
+function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(_){}}
+var topic=lsGet("dw_topic");if(!/^[A-Za-z0-9_-]{12,64}$/.test(topic||"")){topic=makeTopic();lsSet("dw_topic",topic)}
+function showTopic(){$("#push-topic").value=topic;var l=$("#push-link");l.href=NTFY+"/"+topic;l.textContent="Open "+NTFY.replace(/^https:\/\//,"")+"/"+topic+" →";$("#push-stop").hidden=!lsGet("dw_push_on")}
+function syncChans(){$("#push-box").hidden=!$("#via-push").checked;$("#sms-box").hidden=!$("#via-sms").checked;$("#email-box").hidden=!$("#via-email").checked}
+["#via-push","#via-sms","#via-email"].forEach(function(id){$(id).addEventListener("change",function(){syncChans();var f={"#via-sms":"#ping-phone","#via-email":"#ping-email"}[id];if(f&&$(id).checked)setTimeout(function(){$(f).focus()},30)})});
+$("#push-copy").addEventListener("click",function(){var i=$("#push-topic"),b=$("#push-copy");function ok(){b.textContent="Copied";setTimeout(function(){b.textContent="Copy"},1500)}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(topic).then(ok,function(){i.select();try{document.execCommand("copy");ok()}catch(_){}});else{i.select();try{document.execCommand("copy");ok()}catch(_){}}});
+$("#push-topic").addEventListener("focus",function(){this.select()});
+$("#push-stop").addEventListener("click",function(){var msg=$("#ping-msg");msg.textContent="Stopping…";
+  fetch("/api/unsubscribe?topic="+encodeURIComponent(topic),{method:"POST",headers:{accept:"application/json"}}).then(function(r){if(!r.ok)throw new Error(r.status);
+    lsSet("dw_push_on",null);var old=topic;topic=makeTopic();lsSet("dw_topic",topic);showTopic();msg.textContent="Push alerts to "+old+" are stopped. You can delete that topic in the ntfy app."})
+  .catch(function(){msg.textContent="Couldn't stop that right now. Try again in a sec."})});
+showTopic();syncChans();
 function openPing(ctx){
   pingCtx=ctx||{};var wrap=$("#ping-one-wrap");$("#ping-msg").textContent="";
   document.querySelectorAll('input[name=cat]').forEach(function(x){x.checked=false});
@@ -133,36 +149,40 @@ function openPing(ctx){
     $("#ping-what").textContent=d.restock?"We'll ping you the moment it flips to in stock at a store.":"We'll remind you before it drops. Add whole tabs too if you want.";}
   else if(pingCtx.link){wrap.hidden=false;$("#ping-one").checked=true;$("#ping-one-label").textContent="Watch this link: "+String(pingCtx.title).slice(0,70);
     $("#ping-what").textContent="We re-check it every 15 min and ping you when it goes live.";}
-  else{wrap.hidden=true;$("#ping-one").checked=false;$("#ping-what").textContent="Pick your tabs. We text or email you before drops, the moment a console restocks, and when new drops show up.";
+  else{wrap.hidden=true;$("#ping-one").checked=false;$("#ping-what").textContent="Pick your tabs. We ping you before drops, the moment a console restocks, and when new drops show up.";
     var f=document.querySelector('input[name=cat][value="'+filter+'"]');if(f)f.checked=true;}
-  if(dlg.showModal)dlg.showModal();else dlg.setAttribute("open","");setTimeout(function(){$("#ping-phone").focus()},50);
+  showTopic();syncChans();
+  if(dlg.showModal)dlg.showModal();else dlg.setAttribute("open","");
 }
 $("#ping-cancel").addEventListener("click",function(){dlg.close?dlg.close():dlg.removeAttribute("open")});
 $("#open-alerts").addEventListener("click",function(){openPing({})});
 $("#alerts-cta").addEventListener("click",function(){openPing({})});
 $("#ping-form").addEventListener("submit",function(e){
   e.preventDefault();var msg=$("#ping-msg");
-  var phone=$("#ping-phone").value.trim(),email=$("#ping-email").value.trim(),pd=phone.replace(/\D/g,"");
+  var usePush=$("#via-push").checked,phone=$("#via-sms").checked?$("#ping-phone").value.trim():"",email=$("#via-email").checked?$("#ping-email").value.trim():"",pd=phone.replace(/\D/g,"");
+  if($("#via-sms").checked&&!phone&&!usePush&&!email){msg.textContent="Add your phone number for texts.";$("#ping-phone").focus();return}
   if(phone&&(pd.length<10||pd.length>15)){msg.textContent="That phone number doesn't look right.";$("#ping-phone").focus();return}
   if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){msg.textContent="That email doesn't look right.";$("#ping-email").focus();return}
-  if(!phone&&!email){msg.textContent="Add a phone number or an email.";$("#ping-phone").focus();return}
+  if(!usePush&&!phone&&!email){msg.textContent=$("#via-email").checked?"Add your email.":$("#via-sms").checked?"Add your phone number.":"Pick Push (free), Text or Email.";var ff=$("#via-email").checked?"#ping-email":$("#via-sms").checked?"#ping-phone":null;if(ff)$(ff).focus();return}
   var cats=[].slice.call(document.querySelectorAll('input[name=cat]:checked')).map(function(x){return x.value});
   var one=$("#ping-one").checked&&!$("#ping-one-wrap").hidden;
   if(!cats.length&&!one){msg.textContent="Pick at least one tab or drop to watch.";return}
-  var body={phone:phone||null,email:email||null,cats:cats,remind:{before1h:$("#r-1h").checked,morning:$("#r-am").checked}};
+  var body={ntfy:usePush?topic:null,phone:phone||null,email:email||null,cats:cats,remind:{before1h:$("#r-1h").checked,morning:$("#r-am").checked}};
   try{body.tz=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(_){}
   if(one&&pingCtx.drop){var d=pingCtx.drop;body.drop={id:d.id,name:d.name,url:d.shop||d.source,at:d.at||null}}
   if(one&&pingCtx.link)body.link=pingCtx.link;
   $("#ping-go").disabled=true;msg.textContent="Saving…";try{msg.scrollIntoView({block:"nearest"})}catch(_){}
   fetch("/api/signup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)})
     .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"failed");return j})})
-    .then(function(j){msg.textContent=(j.alerts_active?"🔥 ":"✓ ")+(j.message||"Saved.");setTimeout(function(){dlg.close&&dlg.close()},j.alerts_active?1800:3200)})
+    .then(function(j){msg.textContent=(j.alerts_active?"🔥 ":"✓ ")+(j.message||"Saved.");
+      if(usePush){lsSet("dw_push_on","1");$("#push-stop").hidden=false;msg.textContent+=" Last step: subscribe to your topic in the ntfy app (steps above), or alerts have nowhere to land.";return}
+      setTimeout(function(){dlg.close&&dlg.close()},j.alerts_active?1800:3200)})
     .catch(function(err){msg.textContent="Couldn't save that ("+err.message+"). Try again in a sec."})
     .finally(function(){$("#ping-go").disabled=false});
 });
 fetch("/api/health").then(function(r){return r.json()}).then(function(h){
-  var a=h.alerts||{};alertsOn=!!a.active;
-  var ch=[a.sms?"text":null,a.email?"email":null].filter(Boolean).join(" + ");
+  var a=h.alerts||{};alertsOn=!!a.active;if(a.push_server&&/^https:\/\//.test(a.push_server)){NTFY=a.push_server;showTopic()}
+  var ch=[a.push?"free push":null,a.sms?"text":null,a.email?"email":null].filter(Boolean).join(" + ");
   $("#alerts-text").textContent=alertsOn?"Alerts are live by "+ch+".":"Alerts aren't active yet. Sign up now and you'll get them once they're switched on.";
   $("#alerts-line").classList.toggle("on",alertsOn);
   $("#ping-status").textContent=alertsOn?"Alerts are live by "+ch+".":"Heads up: alerts aren't active yet. You'll be saved and start getting them once they're switched on.";

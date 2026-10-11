@@ -103,3 +103,17 @@ input::placeholder{color:#6d6d78}
 .fine.status{color:var(--lime);margin-top:-6px}
 .sheet{max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain}
 [hidden]{display:none!important}
+
+/* v3.2: channel picker + free push (ntfy) box */
+.chans{display:flex;flex-wrap:wrap;gap:6px}
+.push-box{background:#0b0b0e;border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0 4px}
+.push-box[hidden],.chan-field[hidden]{display:none}
+.push-steps{margin:0 0 4px;font-size:14px;line-height:1.5;color:var(--ink)}
+.push-steps a,.push-link{color:var(--lime);font-weight:700}
+.push-box label[for]{margin-top:8px}
+.topic-row{display:flex;gap:8px;align-items:stretch}
+.topic-row input{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;letter-spacing:-.02em;padding:12px 10px;flex:1 1 auto}
+.topic-row .btn{flex:0 0 auto}
+.push-link{display:inline-block;margin-top:10px;font-size:14px;text-decoration:none;overflow-wrap:anywhere}
+.push-stop{display:block;margin-top:8px;font-size:13px;color:var(--mute);font-weight:600;text-decoration:underline}
+.push-stop[hidden]{display:none}

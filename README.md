@@ -1,14 +1,25 @@
-# dropwatch v3 — Vercel edition
+# dropwatch v3.2 — Vercel edition
 
 Live board of upcoming drops — sneakers, Ye/Yeezy, Supreme + streetwear, collectibles, console restocks, ticket on-sales — with countdowns, a live link checker, and **real alerts**: pick your tabs or a single drop, leave a phone and/or email, and dropwatch texts/emails you before it drops, when a console restocks, and when new drops land in your tabs.
+
+## v3.2: free push alerts (ntfy) — nothing to set up
+
+Push alerts go through [ntfy](https://ntfy.sh): free, no account, no card, no API key. **Push is on by default**, so once storage is connected (step 2 below) alerts are **active** with no sender keys at all; Twilio/Resend stay optional extras.
+
+- **Signup:** "Push (free)" is the first, default option. The page makes the subscriber a private, unguessable topic (`dropwatch-` + 14 random characters, kept on that phone), shows it with a Copy button, a link to `https://ntfy.sh/<topic>`, and the ntfy app links ([iPhone](https://apps.apple.com/us/app/ntfy/id1625396347) · [Android](https://play.google.com/store/apps/details?id=io.heckel.ntfy)): install ntfy, tap **+ / Subscribe**, paste the topic. Phone and email are optional add-ons.
+- **Sending:** a plain `fetch` POST to `https://ntfy.sh/<topic>` with `Title`, `Click` (tapping the notification opens the drop), `Tags`, `Priority` and an `Actions` "Stop alerts" button. Copy: `[DROP] {item} drops in 1 hour on {store}! be ready: {link}` / `[RESTOCK] {item} is back in stock at {store}! {link}` with the full link (no 160-char squeeze); morning-of / new-drop / link-live keep their lines. Same dedupe, 6 h restock cooldown and 8/day cap as the other channels (counted per channel).
+- **Unsubscribe:** the "Stop alerts" button on every push, the "Stop push alerts to this topic" button in the signup sheet, or `POST /api/unsubscribe?topic=<topic>` (or `?id=&t=&ch=ntfy`). Deleting the topic in the ntfy app just stops it showing; signing up again turns alerts back on.
+- **Test:** `/api/alerts/test?key=ADMIN_KEY&to=ntfy:<topic>`; read it back at `https://ntfy.sh/<topic>/json?poll=1`.
+- **Optional env:** `NTFY_SERVER` (your own ntfy server, default `https://ntfy.sh`), `NTFY_TOKEN` (access token if that server or a paid ntfy.sh plan needs auth), `NTFY_DISABLED=1` to switch push off.
+- **Limit to know:** the public ntfy.sh server rate-limits anonymous publishing per sending IP (a few hundred messages a day). Plenty for a small list; if `/api/alerts?key=…` starts showing `ntfy 429` errors, get an ntfy account token (`NTFY_TOKEN`) or self-host (`NTFY_SERVER`).
 
 ## v3 setup (do these in order)
 
 The site keeps working at every step; each step switches on more.
 
 1. **Push this repo to `main`.** Vercel redeploys. Board, tabs, link checker and the new alert signup sheet all work. Without storage, signups go to Vercel Logs (search `SIGNUP`) and the site says *"alerts aren't active yet"*.
-2. **Connect storage:** Vercel → project → **Storage** → **Create / Connect** → **Upstash for Redis** (free) → Connect to the project (all environments). This adds `KV_REST_API_URL` + `KV_REST_API_TOKEN` (the `UPSTASH_REDIS_REST_URL` / `_TOKEN` names work too). → Signups are saved as subscribers; the alert engine runs. Still no messages go out until step 3.
-3. **Add a sender** (Vercel → project → Settings → **Environment Variables**, then **Redeploy**). One or both:
+2. **Connect storage:** Vercel → project → **Storage** → **Create / Connect** → **Upstash for Redis** (free) → Connect to the project (all environments). This adds `KV_REST_API_URL` + `KV_REST_API_TOKEN` (the `UPSTASH_REDIS_REST_URL` / `_TOKEN` names work too). → Signups are saved as subscribers; the alert engine runs. With v3.2, **free push alerts are live from this point**; texts/emails still need step 3.
+3. **Optional — add a paid sender** for texts/emails (Vercel → project → Settings → **Environment Variables**, then **Redeploy**). One or both:
    - **Text (Twilio):** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` (your Twilio number like `+15551234567`, or a Messaging Service SID `MG…`). US numbers need A2P 10DLC registration in Twilio before carriers deliver at volume (a toll-free number needs toll-free verification instead).
    - **Email (Resend):** `RESEND_API_KEY`, `ALERT_FROM_EMAIL` (e.g. `dropwatch <alerts@yourdomain.com>`, on a domain verified in Resend).
    → From here the site says *"alerts are live by text/email"*. Without Twilio, phone-only signups are kept and start getting texts once it's added; same for email.
@@ -60,6 +71,7 @@ Vercel dashboard → your project → **Storage** → **Upstash for Redis** (fre
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Added by the Upstash connect above. Stores signups + the drops snapshot. (`UPSTASH_REDIS_REST_URL` / `_TOKEN` also work.) |
 | `ADMIN_KEY` | Any secret string. Unlocks `/api/signups`, `/api/alerts` (dry run) and `/api/alerts/test`. |
 | `CRON_SECRET` | Any secret string. Vercel sends it to the cron route automatically; the GitHub workflow sends it from the `CRON_SECRET` repo secret. |
+| `NTFY_SERVER` / `NTFY_TOKEN` / `NTFY_DISABLED` | Free push is on with none of these. Override the ntfy server, add an access token, or set `NTFY_DISABLED=1` to turn push off. |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM` | Text alerts via Twilio. |
 | `RESEND_API_KEY` / `ALERT_FROM_EMAIL` | Email alerts via Resend. |
 | `SITE_URL` | Optional. Base URL used inside alerts (defaults to the Vercel production URL). |
@@ -91,11 +103,11 @@ Sneaker times are estimates (10 AM ET is the usual US launch). Edit `lib/curated
 - `GET /api/drops`: the board JSON (`updated_at`, `counts`, `sources`, `drops[]`)
 - `GET /api/cron`: refresh the board + run alerts (cron; needs `Authorization: Bearer <CRON_SECRET>` when that's set)
 - `GET /api/check?url=…`: live check of any product/ticket page: `live` / `sold_out` / `not_live` / `blocked` / `unknown`, plus the signals it found
-- `POST /api/signup` `{phone?, email?, cats?[], drop?{id,name,url,at}, link?, remind?{before1h,morning}, tz?}`: subscribe (v2's `{contact, drop, url}` still works)
+- `POST /api/signup` `{ntfy? (push topic), phone?, email?, cats?[], drop?{id,name,url,at}, link?, remind?{before1h,morning}, tz?}`: subscribe (v2's `{contact, drop, url}` still works)
 - `GET /api/signups?key=ADMIN_KEY`: list subscribers (contacts masked; `&full=1` to show them)
 - `GET /api/alerts?key=ADMIN_KEY`: dry run (what would fire now) + last run summary
-- `GET /api/alerts/test?key=ADMIN_KEY&to=<phone|email>`: send one real test alert
-- `GET|POST /api/unsubscribe?id=…&t=…&ch=email|sms|all`: unsubscribe link target
+- `GET /api/alerts/test?key=ADMIN_KEY&to=<phone|email|ntfy:topic>`: send one real test alert
+- `GET|POST /api/unsubscribe?id=…&t=…&ch=email|sms|ntfy|all`: unsubscribe link target; `?topic=<ntfy topic>` stops push to that topic
 - `POST /api/sms-inbound`: optional Twilio webhook for STOP/START
 - `GET /api/health`: shows which optional pieces are configured
 

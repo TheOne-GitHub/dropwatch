@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>dropwatch — know the second it drops</title>
-<meta name="description" content="Live board of upcoming sneaker, Yeezy, Supreme, collectible, console and ticket drops with countdowns. Paste a link and dropwatch checks if it's live. Get a text before it drops.">
+<meta name="description" content="Live board of upcoming sneaker, Yeezy, Supreme, collectible, console and ticket drops with countdowns. Paste a link and dropwatch checks if it's live. Get a free push alert before it drops.">
 <meta property="og:title" content="dropwatch — know the second it drops">
 <meta property="og:description" content="Sneakers, Ye, Supreme, collectibles, console restocks and ticket on-sales, counted down to the second. Paste any link and we check if it's live.">
 <meta name="theme-color" content="#0a0a0c">
@@ -21,7 +21,7 @@
   <section class="hero" aria-labelledby="hero-h">
     <p class="eyebrow"><span class="dot" aria-hidden="true"></span>tracking <b id="count">0</b> drops · <span id="ago">loading…</span></p>
     <h1 id="hero-h">Know the second<br><span class="glow">it drops.</span></h1>
-    <p class="alerts-line" id="alerts-line"><span class="dot2" aria-hidden="true"></span><span id="alerts-text">Text + email alerts for every drop.</span> <button type="button" class="linkbtn" id="alerts-cta">Get alerts →</button></p>
+    <p class="alerts-line" id="alerts-line"><span class="dot2" aria-hidden="true"></span><span id="alerts-text">Free push alerts for every drop.</span> <button type="button" class="linkbtn" id="alerts-cta">Get alerts →</button></p>
     <div class="next" id="next" aria-live="polite">
       <p class="next-label">Next up</p>
       <p class="next-name" id="next-name">—</p>
@@ -61,7 +61,7 @@
 <dialog id="ping" class="sheet" aria-labelledby="ping-h">
   <form id="ping-form" method="dialog" novalidate>
     <h2 id="ping-h">Get alerts 🔔</h2>
-    <p class="sub" id="ping-what">Pick what to watch. We text or email you before it drops, the moment a console restocks, and when new drops hit your tabs.</p>
+    <p class="sub" id="ping-what">Pick what to watch. We ping your phone before it drops, the moment a console restocks, and when new drops hit your tabs.</p>
     <label class="check one" id="ping-one-wrap" hidden><input type="checkbox" id="ping-one" checked> <span id="ping-one-label">This drop</span></label>
     <fieldset class="cats">
       <legend>Your tabs <small>(every drop in them)</small></legend>
@@ -72,16 +72,33 @@
       <label class="chipbox"><input type="checkbox" name="cat" value="games"><span>🎮 Consoles + restocks</span></label>
       <label class="chipbox"><input type="checkbox" name="cat" value="tix"><span>🎟 Tickets</span></label>
     </fieldset>
-    <label for="ping-phone">Phone <small>for texts</small></label>
-    <input id="ping-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(555) 555-0123">
-    <label for="ping-email">Email <small>optional if you gave a phone</small></label>
-    <input id="ping-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@mail.com">
+    <fieldset class="chans">
+      <legend>How should we reach you?</legend>
+      <label class="chipbox"><input type="checkbox" id="via-push" checked><span>📲 Push (free)</span></label>
+      <label class="chipbox"><input type="checkbox" id="via-sms"><span>💬 Text</span></label>
+      <label class="chipbox"><input type="checkbox" id="via-email"><span>✉️ Email</span></label>
+    </fieldset>
+    <div class="push-box" id="push-box">
+      <p class="push-steps"><b>1.</b> Get the free <b>ntfy</b> app: <a href="https://apps.apple.com/us/app/ntfy/id1625396347" target="_blank" rel="noopener">iPhone</a> · <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" rel="noopener">Android</a><br><b>2.</b> In ntfy tap <b>+</b> (Subscribe) and paste your topic, or open your link below.</p>
+      <label for="push-topic">Your private topic <small>keep it secret</small></label>
+      <div class="topic-row"><input id="push-topic" type="text" readonly spellcheck="false" autocomplete="off" value=""><button type="button" class="btn btn-ghost btn-sm" id="push-copy">Copy</button></div>
+      <a class="push-link" id="push-link" href="https://ntfy.sh/" target="_blank" rel="noopener">Open my topic on ntfy.sh →</a>
+      <button type="button" class="linkbtn push-stop" id="push-stop" hidden>Stop push alerts to this topic</button>
+    </div>
+    <div class="chan-field" id="sms-box" hidden>
+      <label for="ping-phone">Phone <small>for texts</small></label>
+      <input id="ping-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(555) 555-0123">
+    </div>
+    <div class="chan-field" id="email-box" hidden>
+      <label for="ping-email">Email</label>
+      <input id="ping-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@mail.com">
+    </div>
     <fieldset class="when">
       <legend>Remind me before dated drops</legend>
       <label class="check"><input type="checkbox" id="r-1h" checked> 1 hour before</label>
       <label class="check"><input type="checkbox" id="r-am" checked> Morning of</label>
     </fieldset>
-    <p class="fine">One message per check, 8 a day max. Msg &amp; data rates may apply. Reply STOP to any text to cancel; every email has an unsubscribe link.</p>
+    <p class="fine">One alert per check, 8 a day max per channel. Push is free. Msg &amp; data rates may apply to texts. Reply STOP to any text; every email and push has an unsubscribe link.</p>
     <p class="fine status" id="ping-status"></p>
     <div class="row">
       <button type="button" class="btn btn-ghost" id="ping-cancel">Not now</button>
@@ -92,7 +109,7 @@
 </dialog>
 
 <footer class="foot">
-  <p>dropwatch v3 · built in a group chat on a Sunday · real alerts</p>
+  <p>dropwatch v3.2 · built in a group chat on a Sunday · free push alerts</p>
 </footer>
 <script src="script.js"></script>
 </body>
