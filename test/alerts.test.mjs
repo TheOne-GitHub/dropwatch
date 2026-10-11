@@ -53,11 +53,11 @@ test("single 1-hour and restock texts use the team copy and stay within 160 char
   const s = mockSender();
   await runAlerts({ drops: board(), now: T0, sender: s, siteUrl: "https://dropwatch-livid.vercel.app" });
   assert.equal(s.outbox.length, 1);
-  assert.match(s.outbox[0].body, /^⚡ drop alert: aj1 drops in 1 hour on Store! be ready: https:\/\/dropwatch-livid\.vercel\.app\/go\/[a-f0-9]{8}\nReply STOP to opt out$/);
+  assert.match(s.outbox[0].body, /^\[DROP\] aj1 drops in 1 hour on Store! be ready: https:\/\/dropwatch-livid\.vercel\.app\/go\/[a-f0-9]{8}\nReply STOP to opt out$/);
   const { smsSingle } = await import("../lib/alerts.js");
   const long = smsSingle({ type: "restock", item: "PS5 Bundle: Disc Slim 1TB w/Fortnite Flowering Chaos Limited Edition", stores: "Walmart, Amazon", short: "https://dropwatch-livid.vercel.app/go/abcdef12" });
   assert.ok(long.length <= 160, long.length + " " + long);
-  assert.match(long, /^🚨 restock live: PS5 Bundle.*… is back in stock right now at Walmart, Amazon! grab it fast: (https:\/\/)?dropwatch-livid\.vercel\.app\/go\/abcdef12\nReply STOP to opt out$/);
+  assert.match(long, /^\[RESTOCK\] PS5 Bundle.*\.\.\. is back in stock at Walmart, Amazon! (https:\/\/)?dropwatch-livid\.vercel\.app\/go\/abcdef12\nReply STOP to opt out$/);
 });
 
 test("opt-out is honored, and a failed send is retried later", async () => {
