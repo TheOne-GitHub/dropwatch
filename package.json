@@ -1,6 +1,6 @@
 {
   "name": "dropwatch",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "node dev-server.mjs",
-    "test": "node test/run.mjs",
-    "snapshot": "node scripts/snapshot.mjs"
+    "test": "node --test test/*.test.mjs",
+    "dry-run": "node scripts/dry-run.mjs"
   }
 }

@@ -1,0 +1,32 @@
+# Runs the dropwatch alert engine every 15 minutes (free on GitHub Actions).
+# Vercel's Hobby plan only allows a daily cron, so this is what makes alerts timely.
+# Needs two repo secrets (GitHub → repo → Settings → Secrets and variables → Actions → New repository secret):
+#   DROPWATCH_URL  = https://dropwatch-livid.vercel.app   (no trailing slash)
+#   CRON_SECRET    = the same value as the CRON_SECRET env var in Vercel
+# GitHub may start scheduled runs a few minutes late; reminders have a 70-minute window to absorb that.
+name: dropwatch alerts
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+concurrency:
+  group: dropwatch-alerts
+  cancel-in-progress: false
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call /api/cron
+        env:
+          DROPWATCH_URL: ${{ secrets.DROPWATCH_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$DROPWATCH_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::error::Add the DROPWATCH_URL and CRON_SECRET repo secrets (see README → v3 setup)"; exit 1
+          fi
+          code=$(curl -sS -o out.json -w '%{http_code}' --max-time 90 \
+            -H "Authorization: Bearer $CRON_SECRET" "${DROPWATCH_URL%/}/api/cron")
+          echo "HTTP $code"
+          jq -c '{total, served_from, alerts: (.alerts | {active, subscribers, sent, events, errors, reason, skipped})}' out.json || cat out.json
+          [ "$code" = "200" ]

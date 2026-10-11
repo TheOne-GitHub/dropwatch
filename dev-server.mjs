@@ -1,15 +1,21 @@
-// Local dev server: serves public/ and routes /api/<name> to api/<name>.js — same handlers Vercel runs.
+// Local dev server: serves public/ and routes /api/<name> to api/<name>.js (or api/<name>/index.js) — same handlers Vercel runs.
 // Usage: node dev-server.mjs  (PORT=3000 by default)
 import http from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 const root = new URL(".", import.meta.url).pathname;
+if (process.env.MEMORY_STORE) (await import("./lib/store.js")).useMemoryStore(); // MEMORY_STORE=1 node dev-server.mjs: try signups/alerts without Redis
 const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".json": "application/json", ".jpg": "image/jpeg", ".png": "image/png", ".svg": "image/svg+xml" };
 http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://localhost");
+  const g = u.pathname.match(/^\/go\/([a-f0-9]+)$/); if (g) { req.url = "/api/go?c=" + g[1]; u.pathname = "/api/go"; } // vercel.json rewrite
   try {
-    const m = u.pathname.match(/^\/api\/([a-z0-9-]+)\/?$/);
-    if (m) { const mod = await import(join(root, "api", m[1] + ".js")); return await mod.default(req, res); }
+    const m = u.pathname.match(/^\/api\/([a-z0-9-]+(?:\/[a-z0-9-]+)?)\/?$/);
+    if (m) {
+      let file = join(root, "api", m[1] + ".js");
+      try { await readFile(file); } catch { file = join(root, "api", m[1], "index.js"); }
+      const mod = await import(file); return await mod.default(req, res);
+    }
     let p = normalize(u.pathname).replace(/^(\.\.[/\\])+/, ""); if (p.endsWith("/")) p += "index.html";
     const buf = await readFile(join(root, "public", p));
     res.writeHead(200, { "content-type": TYPES[extname(p)] || "application/octet-stream" }); res.end(buf);

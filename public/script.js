@@ -22,7 +22,7 @@ function thumb(d){
 function acts(d){
   var a=el("div","acts");
   var buy=el("a","btn btn-hot btn-sm",d.kind==="tix"?"Tickets ↗":"Shop ↗");buy.href=d.shop||d.source;buy.target="_blank";buy.rel="noopener";a.appendChild(buy);
-  var p=el("button","btn btn-ghost btn-sm","🔔 Ping me");p.type="button";p.addEventListener("click",function(){openPing(d.name,d.shop)});a.appendChild(p);
+  var p=el("button","btn btn-ghost btn-sm","🔔 Ping me");p.type="button";p.addEventListener("click",function(){openPing({drop:d})});a.appendChild(p);
   var s=el("a","src","source");s.href=d.source;s.target="_blank";s.rel="noopener";a.appendChild(s);
   return a;
 }
@@ -97,7 +97,7 @@ function showResult(r,url){
   var row=el("div","acts row");
   var w=el("button","btn btn-ghost btn-sm",watching?"⏸ Stop watching":"👀 Keep watching (tab open)");w.type="button";
   w.addEventListener("click",function(){if(watching){clearInterval(watching);watching=null;showResult(r,url)}else{startWatch(url);showResult(r,url)}});
-  var p=el("button","btn btn-hot btn-sm","🔔 Text me when it flips");p.type="button";p.addEventListener("click",function(){openPing(r.title||url,url)});
+  var p=el("button","btn btn-hot btn-sm","🔔 Text me when it flips");p.type="button";p.addEventListener("click",function(){openPing({link:url,title:r.title||url})});
   row.appendChild(w);row.appendChild(p);box.appendChild(row);
 }
 function check(url){
@@ -121,25 +121,50 @@ $("#watch-form").addEventListener("submit",function(e){
   var box=$("#watch-result");box.hidden=false;box.textContent="Checking "+url+" …";
   check(url).then(function(r){lastVerdict=r.verdict;showResult(r,url)}).catch(function(){
     box.textContent="Our checker couldn't be reached from here. Drop your number below and we'll watch it for you.";
-    var p=el("button","btn btn-hot btn-sm","🔔 Text me when it drops");p.type="button";p.style.marginTop="10px";p.addEventListener("click",function(){openPing(url,url)});box.appendChild(document.createElement("br"));box.appendChild(p)});
+    var p=el("button","btn btn-hot btn-sm","🔔 Text me when it drops");p.type="button";p.style.marginTop="10px";p.addEventListener("click",function(){openPing({link:url,title:url})});box.appendChild(document.createElement("br"));box.appendChild(p)});
 });
 
-/* ---- signup sheet (stored on the site's backend: /api/signup) ---- */
-var dlg=$("#ping");
-function openPing(what,url){
-  $("#ping-what").textContent="We'll text you when “"+what+"” drops.";$("#ping-drop").value=what;$("#ping-url").value=url||"";$("#ping-msg").textContent="";
-  if(dlg.showModal)dlg.showModal();else dlg.setAttribute("open","");setTimeout(function(){$("#ping-contact").focus()},50);
+/* ---- alerts signup sheet (saved on the site's backend: /api/signup; sent by /api/cron) ---- */
+var dlg=$("#ping"),pingCtx={},alertsOn=null;
+function openPing(ctx){
+  pingCtx=ctx||{};var wrap=$("#ping-one-wrap");$("#ping-msg").textContent="";
+  document.querySelectorAll('input[name=cat]').forEach(function(x){x.checked=false});
+  if(pingCtx.drop){var d=pingCtx.drop;wrap.hidden=false;$("#ping-one").checked=true;$("#ping-one-label").textContent=(d.restock?"Restocks of “":"Just “")+d.name+"”";
+    $("#ping-what").textContent=d.restock?"We'll ping you the moment it flips to in stock at a store.":"We'll remind you before it drops. Add whole tabs too if you want.";}
+  else if(pingCtx.link){wrap.hidden=false;$("#ping-one").checked=true;$("#ping-one-label").textContent="Watch this link: "+String(pingCtx.title).slice(0,70);
+    $("#ping-what").textContent="We re-check it every 15 min and ping you when it goes live.";}
+  else{wrap.hidden=true;$("#ping-one").checked=false;$("#ping-what").textContent="Pick your tabs. We text or email you before drops, the moment a console restocks, and when new drops show up.";
+    var f=document.querySelector('input[name=cat][value="'+filter+'"]');if(f)f.checked=true;}
+  if(dlg.showModal)dlg.showModal();else dlg.setAttribute("open","");setTimeout(function(){$("#ping-phone").focus()},50);
 }
 $("#ping-cancel").addEventListener("click",function(){dlg.close?dlg.close():dlg.removeAttribute("open")});
+$("#open-alerts").addEventListener("click",function(){openPing({})});
+$("#alerts-cta").addEventListener("click",function(){openPing({})});
 $("#ping-form").addEventListener("submit",function(e){
-  e.preventDefault();var c=$("#ping-contact").value.trim();var msg=$("#ping-msg");
-  var digits=c.replace(/\D/g,"");
-  if(!(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c)||(digits.length>=10&&digits.length<=15))){msg.textContent="That doesn't look like a phone or email.";return}
-  $("#ping-go").disabled=true;msg.textContent="Saving…";
-  fetch("/api/signup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({contact:c,drop:$("#ping-drop").value,url:$("#ping-url").value})})
+  e.preventDefault();var msg=$("#ping-msg");
+  var phone=$("#ping-phone").value.trim(),email=$("#ping-email").value.trim(),pd=phone.replace(/\D/g,"");
+  if(phone&&(pd.length<10||pd.length>15)){msg.textContent="That phone number doesn't look right.";$("#ping-phone").focus();return}
+  if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){msg.textContent="That email doesn't look right.";$("#ping-email").focus();return}
+  if(!phone&&!email){msg.textContent="Add a phone number or an email.";$("#ping-phone").focus();return}
+  var cats=[].slice.call(document.querySelectorAll('input[name=cat]:checked')).map(function(x){return x.value});
+  var one=$("#ping-one").checked&&!$("#ping-one-wrap").hidden;
+  if(!cats.length&&!one){msg.textContent="Pick at least one tab or drop to watch.";return}
+  var body={phone:phone||null,email:email||null,cats:cats,remind:{before1h:$("#r-1h").checked,morning:$("#r-am").checked}};
+  try{body.tz=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(_){}
+  if(one&&pingCtx.drop){var d=pingCtx.drop;body.drop={id:d.id,name:d.name,url:d.shop||d.source,at:d.at||null}}
+  if(one&&pingCtx.link)body.link=pingCtx.link;
+  $("#ping-go").disabled=true;msg.textContent="Saving…";try{msg.scrollIntoView({block:"nearest"})}catch(_){}
+  fetch("/api/signup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)})
     .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||"failed");return j})})
-    .then(function(j){msg.textContent=j.position?"You're on the list. #"+j.position+" in line 🔥":"You're on the list 🔥";setTimeout(function(){dlg.close&&dlg.close()},1600)})
+    .then(function(j){msg.textContent=(j.alerts_active?"🔥 ":"✓ ")+(j.message||"Saved.");setTimeout(function(){dlg.close&&dlg.close()},j.alerts_active?1800:3200)})
     .catch(function(err){msg.textContent="Couldn't save that ("+err.message+"). Try again in a sec."})
     .finally(function(){$("#ping-go").disabled=false});
 });
+fetch("/api/health").then(function(r){return r.json()}).then(function(h){
+  var a=h.alerts||{};alertsOn=!!a.active;
+  var ch=[a.sms?"text":null,a.email?"email":null].filter(Boolean).join(" + ");
+  $("#alerts-text").textContent=alertsOn?"Alerts are live by "+ch+".":"Alerts aren't active yet. Sign up now and you'll get them once they're switched on.";
+  $("#alerts-line").classList.toggle("on",alertsOn);
+  $("#ping-status").textContent=alertsOn?"Alerts are live by "+ch+".":"Heads up: alerts aren't active yet. You'll be saved and start getting them once they're switched on.";
+}).catch(function(){});
 })();

@@ -4,14 +4,20 @@
   "buildCommand": "",
   "outputDirectory": "public",
   "functions": {
-    "api/*.js": {
-      "maxDuration": 30
+    "api/**/*.js": {
+      "maxDuration": 60
     }
   },
   "crons": [
     {
       "path": "/api/cron",
       "schedule": "0 13 * * *"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/go/:c",
+      "destination": "/api/go?c=:c"
     }
   ]
 }

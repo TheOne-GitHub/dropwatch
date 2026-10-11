@@ -78,3 +78,28 @@ input::placeholder{color:#6d6d78}
 .chip.in{background:var(--lime);color:#000}.chip.out{background:#24242c;color:var(--mute)}
 .restock-h{margin:28px 0 4px;font-size:18px}
 .ago{color:var(--lime)}
+
+/* v3: alerts */
+.toplinks{display:flex;gap:6px;align-items:center}
+.toplink.hot{background:var(--lime);color:#0a0a0c;border-color:var(--lime);font:inherit;font-size:14px;font-weight:800;cursor:pointer}
+.alerts-line{margin:-8px 0 16px;color:var(--mute);font-size:14px}
+.alerts-line.on{color:var(--ink)}
+.dot2{display:inline-block;vertical-align:1px;width:8px;height:8px;border-radius:50%;background:#55555f;margin-right:8px}.alerts-line.on .dot2{background:var(--lime);box-shadow:0 0 10px var(--lime)}
+.linkbtn{font:inherit;font-weight:800;color:var(--lime);background:none;border:0;padding:4px 0;cursor:pointer}
+.sheet fieldset{border:0;margin:12px 0 4px;padding:0;min-width:0}
+.sheet legend{font-weight:800;font-size:14px;margin-bottom:8px;padding:0}
+.sheet legend small,.sheet label small{color:var(--mute);font-weight:500}
+.cats{display:flex;flex-wrap:wrap;gap:6px}
+.sheet .chipbox{position:relative;display:inline-flex;margin:0}
+.chipbox input{position:absolute;opacity:0;width:1px;height:1px}
+.chipbox span{display:inline-block;font-size:14px;font-weight:700;padding:8px 12px;border-radius:999px;border:1px solid var(--line);color:var(--mute);cursor:pointer;user-select:none}
+.chipbox input:checked+span{background:var(--lime);border-color:var(--lime);color:#0a0a0c}
+.chipbox input:focus-visible+span{outline:3px solid var(--cyan);outline-offset:2px}
+.sheet .check{display:flex;align-items:center;gap:8px;font-size:15px;margin:6px 0;cursor:pointer}
+.sheet .check input{width:20px;height:20px;accent-color:var(--lime);flex:0 0 auto;margin:0}
+.sheet .check.one{background:#0b0b0e;border:1px solid var(--line);border-radius:14px;padding:12px;margin:4px 0 6px;font-weight:700;overflow-wrap:anywhere}
+.when{display:flex;flex-wrap:wrap;gap:4px 18px}.when legend{width:100%}
+.sheet label[for]{display:block;font-weight:800;font-size:14px;margin:12px 0 6px}
+.fine.status{color:var(--lime);margin-top:-6px}
+.sheet{max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain}
+[hidden]{display:none!important}

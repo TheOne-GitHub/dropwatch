@@ -11,10 +11,10 @@ import SEED from "../data/seed.js";
 const FRESH_MS = 30 * 60 * 1000;
 const CACHE = "public, max-age=60, s-maxage=1800, stale-while-revalidate=86400";
 
-export async function freshDrops({ force = false } = {}) {
+export async function freshDrops({ force = false, maxAgeMs = FRESH_MS } = {}) {
   let snap = null;
   try { snap = await getJSON("drops:latest"); } catch {}
-  if (!force && snap && Date.now() - Date.parse(snap.updated_at) < FRESH_MS) return { ...snap, served_from: "store" };
+  if (!force && snap && Date.now() - Date.parse(snap.updated_at) < maxAgeMs) return { ...snap, served_from: "store" };
   try {
     const live = await scrapeAll(Date.now(), snap || SEED);
     const okSources = Object.values(live.sources).filter((s) => s.ok).length;
