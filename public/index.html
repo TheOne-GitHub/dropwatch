@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>dropwatch — know the second it drops</title>
+<meta name="description" content="Live board of upcoming sneaker, Yeezy, Supreme, collectible, console and ticket drops with countdowns. Paste a link and dropwatch checks if it's live.">
+<meta property="og:title" content="dropwatch — know the second it drops">
+<meta property="og:description" content="Sneakers, Ye, Supreme, collectibles, console restocks and ticket on-sales, counted down to the second. Paste any link and we check if it's live.">
+<meta name="theme-color" content="#0a0a0c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#board">Skip to drops</a>
+<header class="top">
+  <div class="brand"><span class="bolt" aria-hidden="true">⚡</span>dropwatch</div>
+  <a class="toplink" href="#watch">Watch a link</a>
+</header>
+<main>
+  <section class="hero" aria-labelledby="hero-h">
+    <p class="eyebrow"><span class="dot" aria-hidden="true"></span>tracking <b id="count">0</b> drops · <span id="ago">loading…</span></p>
+    <h1 id="hero-h">Know the second<br><span class="glow">it drops.</span></h1>
+    <div class="next" id="next" aria-live="polite">
+      <p class="next-label">Next up</p>
+      <p class="next-name" id="next-name">—</p>
+      <div class="clock" id="next-clock" role="timer"></div>
+    </div>
+  </section>
+
+  <section id="watch" class="watch" aria-labelledby="watch-h">
+    <h2 id="watch-h">Watch a link</h2>
+    <p class="sub">Paste a sneaker or ticket page. We hit it right now and tell you if it's live, sold out, or not dropped yet.</p>
+    <form id="watch-form" class="watch-form" novalidate>
+      <label class="sr" for="watch-url">Product or ticket URL</label>
+      <input id="watch-url" name="url" type="url" inputmode="url" autocomplete="off" placeholder="https://www.nike.com/launch/t/…" required>
+      <button type="submit" class="btn btn-hot">Check it</button>
+    </form>
+    <div id="watch-result" class="result" aria-live="polite" hidden></div>
+  </section>
+
+  <section id="board" class="board" aria-labelledby="board-h">
+    <div class="board-head">
+      <h2 id="board-h">Upcoming drops</h2>
+      <div class="tabs" role="tablist" aria-label="Filter drops">
+        <button role="tab" aria-selected="true" data-f="all">All</button>
+        <button role="tab" aria-selected="false" data-f="kicks">👟 Kicks</button>
+        <button role="tab" aria-selected="false" data-f="ye">🧱 Ye</button>
+        <button role="tab" aria-selected="false" data-f="street">🔴 Supreme + street</button>
+        <button role="tab" aria-selected="false" data-f="collect">🧸 Collectibles</button>
+        <button role="tab" aria-selected="false" data-f="games">🎮 Consoles</button>
+        <button role="tab" aria-selected="false" data-f="tix">🎟 Tickets</button>
+      </div>
+    </div>
+    <div id="list"><p class="sub">Loading live drops…</p></div>
+    <p class="fine">Every drop here is pulled from the linked source page (Nice Kicks, drops.gg, pokemon.com, LEGO.com, nowinstock.net, artist/news pages) and refreshed automatically — <span id="updated"></span>. Sneaker times are estimates (most US launches hit at 10 AM ET); always confirm on the store's app. Restock status is as of the tracker's last read.</p><p class="fine" id="srcs"></p>
+  </section>
+</main>
+
+<dialog id="ping" class="sheet" aria-labelledby="ping-h">
+  <form id="ping-form" method="dialog" novalidate>
+    <h2 id="ping-h">Get pinged 🔔</h2>
+    <p class="sub" id="ping-what">We'll text you when it drops.</p>
+    <label for="ping-contact">Phone or email</label>
+    <input id="ping-contact" name="contact" autocomplete="tel" placeholder="(555) 555-0123 or you@mail.com" required>
+    <input type="hidden" id="ping-drop" name="drop">
+    <input type="hidden" id="ping-url" name="url">
+    <p class="fine">Early access: alerts are rolling out to the first people on the list. No spam, one ping per drop.</p>
+    <div class="row">
+      <button type="button" class="btn btn-ghost" id="ping-cancel">Not now</button>
+      <button type="submit" class="btn btn-hot" id="ping-go">I'm in</button>
+    </div>
+    <p id="ping-msg" class="msg" aria-live="polite"></p>
+  </form>
+</dialog>
+
+<footer class="foot">
+  <p>dropwatch v2 · built in a group chat on a Sunday · auto-refreshing</p>
+</footer>
+<script src="script.js"></script>
+</body>
+</html>

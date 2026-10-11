@@ -1,0 +1,14 @@
+{
+  "name": "dropwatch",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "node dev-server.mjs",
+    "test": "node test/run.mjs",
+    "snapshot": "node scripts/snapshot.mjs"
+  }
+}
